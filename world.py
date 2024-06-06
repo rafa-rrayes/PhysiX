@@ -6,6 +6,7 @@ class World:
         for object in self.objects:
             object.start(t)
         dt = t[1] - t[0]
+        self.dt = dt
         for i in range(1, len(t)):
 
             for num, object in enumerate(self.objects):
@@ -28,13 +29,12 @@ class World:
 
         lines = []
         for object in self.objects:
-            line, = ax.plot([], [], [], label=object.name)
+            line, = ax.plot([], [], [], label=object.name, color=object.color, marker='o')
             lines.append(line)
-
         def init():
-            ax.set_xlim([-10, 10])
-            ax.set_ylim([-10, 10])
-            ax.set_zlim([-10, 10])
+            ax.set_xlim([10, -10])
+            ax.set_ylim([10, -10])
+            ax.set_zlim([10, -10])
             for line in lines:
                 line.set_data([], [])
                 line.set_3d_properties([])
@@ -42,17 +42,25 @@ class World:
 
         def update(frame):
             for line, object in zip(lines, self.objects):
-                xdata = [res[0][0] for res in object.results[:frame+1]]
-                ydata = [res[0][1] for res in object.results[:frame+1]]
-                zdata = [res[0][2] for res in object.results[:frame+1]]
-                line.set_data(xdata, ydata)
-                line.set_3d_properties(zdata)
+                if not object.trail:
+                    line.set_data([],[])
+                    line.set_3d_properties([])
+                    xdata = [res[0][0] for res in object.results[frame:frame+1]]
+                    ydata = [res[0][1] for res in object.results[frame:frame+1]]
+                    zdata = [res[0][2] for res in object.results[frame:frame+1]]
+                    line.set_data(xdata, ydata)
+                    line.set_3d_properties(zdata)
+                else:
+                    xdata = [res[0][0] for res in object.results[:frame+1]]
+                    ydata = [res[0][1] for res in object.results[:frame+1]]
+                    zdata = [res[0][2] for res in object.results[:frame+1]]
+                    line.set_data(xdata, ydata)
+                    line.set_3d_properties(zdata)
             return lines
-
-        ani = animation.FuncAnimation(fig, update, frames=len(self.objects[0].results), init_func=init, blit=True)
-
+        ani = animation.FuncAnimation(fig, update, frames=len(self.objects[0].results),interval=1000*self.dt, init_func=init, blit=True)
         plt.legend()
         plt.show()
+        return ani
 
 
 
@@ -65,6 +73,7 @@ class Point:
         self.acceleration = np.array(acceleration)
         self.name = kargs.get('name')
         self.color = kargs.get('color')
+        self.trail = kargs.get('trail', False)
         
 
     def start(self, t):
